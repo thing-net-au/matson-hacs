@@ -29,35 +29,23 @@ class MatsonMonitorConfigFlow(ConfigFlow, domain=DOMAIN):
         self, discovery_info: BluetoothServiceInfoBleak
     ) -> FlowResult:
         """Handle the bluetooth discovery step."""
-        _LOGGER.debug("Discovered Matson Monitor via Bluetooth: %s", discovery_info)
+        _LOGGER.info(
+            "Auto-discovered Matson Monitor via Bluetooth: %s (%s)", 
+            discovery_info.name, 
+            discovery_info.address
+        )
         await self.async_set_unique_id(discovery_info.address)
         self._abort_if_unique_id_configured()
         
         self._discovery_info = discovery_info
         
-        return await self.async_step_bluetooth_confirm()
-
-    async def async_step_bluetooth_confirm(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Confirm discovery."""
-        assert self._discovery_info is not None
-        discovery_info = self._discovery_info
-        
-        if user_input is not None:
-            return self.async_create_entry(
-                title=discovery_info.name or discovery_info.address,
-                data={},
-            )
-        
-        self._set_confirm_only()
-        
-        return self.async_show_form(
-            step_id="bluetooth_confirm",
-            description_placeholders={
-                "name": discovery_info.name or discovery_info.address
-            },
+        # Automatically create entry without user confirmation
+        return self.async_create_entry(
+            title=discovery_info.name or f"Matson Monitor {discovery_info.address[-5:]}",
+            data={},
         )
+
+
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -82,7 +70,7 @@ class MatsonMonitorConfigFlow(ConfigFlow, domain=DOMAIN):
             for service_info in discovered_devices
             if service_info.address not in current_addresses
             and service_info.name
-            and service_info.name.startswith("Matson")
+            and (service_info.name.startswith("Matson") or service_info.name.startswith("MATSON"))
         }
         
         if not self._discovered_devices:
