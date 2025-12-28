@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0D47A1;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#1976D2;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="battGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#66BB6A;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="btGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#03A9F4;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#29B6F6;stop-opacity:1"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="200" height="200" rx="40" fill="url(#bgGradient)"/>
+  
+  <!-- Battery body -->
+  <rect x="45" y="60" width="90" height="80" rx="10" 
+        fill="none" stroke="url(#battGrad)" stroke-width="6"/>
+  
+  <!-- Battery terminal -->
+  <rect x="80" y="35" width="40" height="25" rx="5" fill="url(#battGrad)"/>
+  
+  <!-- Battery charge bars -->
+  <rect x="55" y="75" width="15" height="50" rx="3" fill="#4CAF50" opacity="0.9"/>
+  <rect x="77" y="75" width="15" height="50" rx="3" fill="#4CAF50" opacity="0.7"/>
+  <rect x="99" y="75" width="15" height="50" rx="3" fill="#4CAF50" opacity="0.5"/>
+  
+  <!-- Bluetooth symbol -->
+  <path d="M 88 155 L 115 128 L 88 108 L 115 88 L 88 61 M 88 108 L 61 88 M 88 108 L 61 128" 
+        fill="none" stroke="url(#btGrad)" stroke-width="7" 
+        stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Signal waves -->
+  <path d="M 140 95 Q 150 108 140 121" 
+        fill="none" stroke="#FF9800" stroke-width="5" 
+        stroke-linecap="round" opacity="0.8"/>
+  <path d="M 150 85 Q 165 108 150 131" 
+        fill="none" stroke="#FF9800" stroke-width="5" 
+        stroke-linecap="round" opacity="0.6"/>
+</svg>
