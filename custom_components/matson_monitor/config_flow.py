@@ -4,6 +4,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+import voluptuous as vol
+
 from homeassistant.components import bluetooth
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from homeassistant.config_entries import ConfigFlow
@@ -89,6 +91,3 @@ class MatsonMonitorConfigFlow(ConfigFlow, domain=DOMAIN):
                 }
             ),
         )
-
-
-import voluptuous as vol
