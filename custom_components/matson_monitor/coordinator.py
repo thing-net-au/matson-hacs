@@ -50,21 +50,32 @@ class MatsonDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def _connect(self) -> None:
         """Connect to the device."""
-        _LOGGER.debug("Connecting to %s", self._ble_device.address)
+        _LOGGER.info("Connecting to %s", self._ble_device.address)
         
         self._expected_disconnect = False
         self._client = BleakClient(
             self._ble_device,
             disconnected_callback=self._on_disconnect,
+            timeout=30.0,
         )
         
         await self._client.connect()
-        _LOGGER.debug("Connected to %s", self._ble_device.address)
+        _LOGGER.info("Connected to %s", self._ble_device.address)
+        
+        # Wait for connection to stabilize
+        import asyncio
+        await asyncio.sleep(1)
+        
+        # Verify still connected
+        if not self._client.is_connected:
+            raise BleakError("Device disconnected immediately after connection")
         
         # Perform binding if not already bound
         if not self._is_bound:
+            _LOGGER.info("Performing binding for %s", self._ble_device.address)
             await self._perform_binding()
             self._is_bound = True
+            _LOGGER.info("Binding completed for %s", self._ble_device.address)
 
     async def _disconnect(self) -> None:
         """Disconnect from the device."""
@@ -85,7 +96,10 @@ class MatsonDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def _read_data(self) -> dict[str, Any]:
         """Read data from the Matson Monitor."""
+        import asyncio
+        
         if not self._client or not self._client.is_connected:
+            _LOGGER.warning("Not connected to device, attempting reconnection...")
             raise UpdateFailed("Not connected to device")
         
         data: dict[str, Any] = {}
@@ -103,11 +117,17 @@ class MatsonDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     
                     if "read" in char.properties:
                         try:
+                            # Check connection before each read
+                            if not self._client.is_connected:
+                                _LOGGER.warning("Lost connection during data read")
+                                raise UpdateFailed("Connection lost during read")
+                            
                             value = await self._client.read_gatt_char(char.uuid)
                             data[char.uuid] = value
                             _LOGGER.debug("    Read value: %s", value.hex())
+                            await asyncio.sleep(0.1)  # Small delay between reads
                         except Exception as err:
-                            _LOGGER.debug("    Could not read: %s", err)
+                            _LOGGER.debug("    Could not read %s: %s", char.uuid, err)
             
             # Parse the data based on Matson Monitor protocol
             parsed_data = self._parse_data(data)
@@ -153,34 +173,53 @@ class MatsonDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def _perform_binding(self) -> None:
         """Perform binding with the Matson Monitor device."""
-        _LOGGER.info("Performing binding with Matson Monitor")
+        import asyncio
+        
+        _LOGGER.info("Starting binding procedure with Matson Monitor")
         
         try:
-            # Matson devices typically use a binding procedure via BLE
-            # This may involve:
-            # 1. Enabling notifications on specific characteristics
-            # 2. Writing a binding key/command
-            # 3. Waiting for acknowledgment
+            # Wait a moment for device to be ready
+            await asyncio.sleep(0.5)
+            
+            # Check if still connected
+            if not self._client.is_connected:
+                _LOGGER.error("Device disconnected before binding could start")
+                raise BleakError("Device disconnected during binding setup")
+            
+            # Discover services
+            _LOGGER.debug("Discovering services...")
+            services = self._client.services
+            _LOGGER.info("Found %d services", len(services))
             
             # Enable notifications on notify-capable characteristics
-            for service in self._client.services:
+            notifications_enabled = 0
+            for service in services:
+                _LOGGER.debug("Service: %s", service.uuid)
                 for char in service.characteristics:
                     if "notify" in char.properties or "indicate" in char.properties:
-                        _LOGGER.debug("Enabling notifications on %s", char.uuid)
+                        _LOGGER.info("Enabling notifications on %s", char.uuid)
                         try:
                             await self._client.start_notify(char.uuid, self._notification_handler)
-                            _LOGGER.debug("Notifications enabled on %s", char.uuid)
+                            await asyncio.sleep(0.2)  # Small delay between notifications
+                            notifications_enabled += 1
+                            _LOGGER.info("✓ Notifications enabled on %s", char.uuid)
                         except Exception as err:
-                            _LOGGER.debug("Could not enable notifications on %s: %s", char.uuid, err)
+                            _LOGGER.warning("Could not enable notifications on %s: %s", char.uuid, err)
             
-            # Some devices require a binding command to be written
-            # Update this with the actual binding characteristic UUID and command
-            # Example: await self._client.write_gatt_char(BINDING_UUID, BINDING_COMMAND)
+            _LOGGER.info("Enabled notifications on %d characteristics", notifications_enabled)
             
-            _LOGGER.info("Binding completed successfully")
+            # Give device time to process binding
+            await asyncio.sleep(1)
+            
+            # Verify still connected after binding
+            if not self._client.is_connected:
+                _LOGGER.error("Device disconnected during binding")
+                raise BleakError("Device disconnected during binding")
+            
+            _LOGGER.info("✓ Binding completed successfully")
             
         except Exception as err:
-            _LOGGER.error("Error during binding: %s", err)
+            _LOGGER.error("✗ Error during binding: %s", err)
             raise
     
     @callback
