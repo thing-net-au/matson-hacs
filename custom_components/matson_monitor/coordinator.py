@@ -189,11 +189,12 @@ class MatsonDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # Discover services
             _LOGGER.debug("Discovering services...")
             services = self._client.services
-            _LOGGER.info("Found %d services", len(services))
+            service_list = list(services)
+            _LOGGER.info("Found %d services", len(service_list))
             
             # Enable notifications on notify-capable characteristics
             notifications_enabled = 0
-            for service in services:
+            for service in service_list:
                 _LOGGER.debug("Service: %s", service.uuid)
                 for char in service.characteristics:
                     if "notify" in char.properties or "indicate" in char.properties:
