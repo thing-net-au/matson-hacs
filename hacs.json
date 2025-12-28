@@ -1,5 +1,7 @@
 {
   "name": "Matson Monitor",
+  "content_in_root": false,
   "render_readme": true,
-  "domains": ["matson_monitor"]
+  "zip_release": false,
+  "filename": "matson_monitor"
 }
