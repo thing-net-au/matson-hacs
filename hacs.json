@@ -1,0 +1,5 @@
+{
+  "name": "Matson Monitor",
+  "render_readme": true,
+  "domains": ["matson_monitor"]
+}
